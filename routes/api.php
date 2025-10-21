@@ -21,7 +21,6 @@ Route::middleware("web")->post('/login', function (Request $request) {
 
     if (Auth::attempt($credentials)) {
         $user = Auth::user();
-        $request->session()->regenerate();
 
         return response()->json([
             'success' => true,
