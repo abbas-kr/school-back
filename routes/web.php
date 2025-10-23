@@ -50,3 +50,23 @@ Route::middleware(['web', 'auth'])->post('/logout', function (Request $request) 
         'message' => 'شما با موفقیت خارج شدید.'
     ]);
 })->name('logout');
+
+
+Route::middleware(['web', 'auth'])->put('/user', function (Request $request) {
+    $user = Auth::user();
+
+    $validated = $request->validate([
+        'firstname' => ['required', 'string', 'max:255'],
+        'lastname' => ['required', 'string', 'max:255'],
+        'phone' => ['nullable', 'string', 'max:20'],
+        'username' => ['required', 'string', 'max:255', 'unique:users,username,' . $user->id],
+    ]);
+
+    $user->update($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'اطلاعات شما با موفقیت به‌روزرسانی شد.',
+        'user' => $user,
+    ]);
+});
