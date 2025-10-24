@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\User\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -8,65 +10,22 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware("web")->post('/login', function (Request $request) {
-    $credentials = $request->validate([
-        'username' => ['required'],
-        'password' => ['required'],
-    ]);
+Route::post('/login', [LoginController::class, 'login'])->name('login');
 
-    if (Auth::attempt($credentials)) {
-        $user = Auth::user();
+
+Route::middleware('auth')->group(function () {
+    Route::get('/user', function (Request $request) {
         return response()->json([
             'success' => true,
-            'user' => $user
+            'user' => $request->user()
         ]);
-    }
+    });
 
-    return response()->json([
-        'success'=> false,
-        'message' => 'نام کاربری یا رمز عبور اشتباه است']
-    );
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-})->name('login');
-
-
-Route::middleware(['web', 'auth'])->get('/user', function (Request $request) {
-    return response()->json([
-        'success' => true,
-        'user' => $request->user()
-    ]);
-});
-
-
-
-Route::middleware(['web', 'auth'])->post('/logout', function (Request $request) {
-    Auth::logout(); // خروج کاربر
-
-    $request->session()->invalidate(); // باطل کردن سشن
-    $request->session()->regenerateToken(); // تولید CSRF توکن جدید
-
-    return response()->json([
-        'success' => true,
-        'message' => 'شما با موفقیت خارج شدید.'
-    ]);
-})->name('logout');
-
-
-Route::middleware(['web', 'auth'])->put('/user', function (Request $request) {
-    $user = Auth::user();
-
-    $validated = $request->validate([
-        'firstname' => ['required', 'string', 'max:255'],
-        'lastname' => ['required', 'string', 'max:255'],
-        'phone' => ['nullable', 'string', 'max:20'],
-        'username' => ['required', 'string', 'max:255', 'unique:users,username,' . $user->id],
-    ]);
-
-    $user->update($validated);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'اطلاعات شما با موفقیت به‌روزرسانی شد.',
-        'user' => $user,
-    ]);
+    Route::name('user.')->controller(UserController::class)->group(function () {
+        Route::get('/users', 'index')->name('index');
+        Route::get('/users/{user:username}', 'index')->name('index');
+        Route::put('/users/{user:username}', 'update')->name('update');
+    });
 });
